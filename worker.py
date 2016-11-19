@@ -1,6 +1,7 @@
 import threading
 import socket
 import chat_room
+import time 
 
 class Worker(threading.Thread):
 
@@ -18,15 +19,17 @@ class Worker(threading.Thread):
 		self.buffer_size = buffer_size
 		self.chat_rooms = {}
 		self.chat_room_join_identifiers = {}
+		self.last_chat_room_added = chat_room
 		self.client_name = client_name
-		self.register_with_chatroom(chat_room)
 
 	def get_client_name(self):
 		return self.client_name
 
 	def register_with_chatroom(self, chat_room):
+		print chat_room
 		self.chat_rooms[chat_room.get_identifier()] = chat_room
 		self.chat_room_join_identifiers[chat_room.get_name()] = chat_room.register_observer(self)
+		print self.chat_room_join_identifiers
 		return self.chat_room_join_identifiers[chat_room.get_name()]
 
 	def broadcast(self, message):
@@ -46,10 +49,14 @@ class Worker(threading.Thread):
 		# Then, terminate thread
 
 	def run(self):
-   		while not self.exit:
+		self.register_with_chatroom(self.last_chat_room_added)
+   		while True: #not self.exit:
+			#time.sleep(1)
+			#received = "WAITING" 
+#			time.sleep(30)
 			print "waiting for data inside thread"
-		  	received = self.socket.recv(self.buffer_size)
-			print received
+		  	received = self.socket.recv(2048)
+			print "RECEIVED: " + received
 			received_split = received.split('\n')
 			action_key_value = received_split[0]
 			action_name = action_key_value[:action_key_value.find(':')]
@@ -75,5 +82,3 @@ class Worker(threading.Thread):
 				message_content = message_key_value[message_key_value.find(':')+1:].strip()
 				print "message_content: " + str(message_content)
 				chat_room.relay(message_content, self)
-			else:
-				break
