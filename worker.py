@@ -47,16 +47,21 @@ class Worker(threading.Thread):
 
 	def run(self):
    		while not self.exit:
+			print "waiting for data inside thread"
 		  	received = self.socket.recv(self.buffer_size)
+			print received
 			received_split = received.split('\n')
 			action_key_value = received_split[0]
 			action_name = action_key_value[:action_key_value.find(':')]
 			if "helo" in received.strip().lower():
+					print "received hello"
 		   			self.socket.sendall("{0}\nIP:{1}\nPort:{2}\nStudentID:{3}\n".format(received.strip(), self.host, self.port, 12326755))
 			elif "kill_service" in received.strip().lower():
+					print "killing service"
 					self.socket.close()
 					self.exit = True
 			elif (action_name == Worker.ACTION_LEAVE_CHATROOM):
+				print "leaving chatroom"
 				chat_room_identifier = int(action_key_value[action_key_value.find(':')+1:].strip())
 				chat_room = self.chat_rooms[chat_room_identifier]
 				self.deregister_with_chatroom(chat_room)
@@ -72,19 +77,3 @@ class Worker(threading.Thread):
 				chat_room.relay(message_content, self)
 			else:
 				break
-			"""
-			switch (action_name):
-				case Worker.ACTION_LEAVE_CHATROOM:
-					self.deregister_with_chatroom()
-					self.socket.sendall("LEAVING CHATROOM\nIP:{0}\nPort:{1}\nStudentID:{2}\n".format(self.host, self.port, 12326755))
-					break
-				case Worker.ACTION_DISCONNECT:
-					self.disconnect()
-					self.socket.sendall("HELO text\nIP:{0}\nPort:{1}\nStudentID:{2}\n".format(self.host, self.port, 12326755))
-					break
-				case Worker.ACTION_CHAT:
-					self.chat_room.relay(received)
-					break
-				default:
-					break
-			"""
