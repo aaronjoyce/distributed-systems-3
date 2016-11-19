@@ -1,5 +1,6 @@
 import threading
 import socket
+import time
 from worker import Worker
 from chat_room import ChatRoom
 
@@ -17,11 +18,10 @@ class WorkerPool:
 
 	def run(self):
 		self.listener = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+	        #self.listener.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 		self.listener.bind((self.host, self.port))
-		self.listener.listen(1)
-		conn = None
+		self.listener.listen(1000)
 		while True:
-			print "waiting for connection"
 			conn, addr = self.listener.accept()
 			if (len(self.thread_pool) < self.thread_pool_size):
 				# Then, accept the connection. 
@@ -31,6 +31,7 @@ class WorkerPool:
 				# At this point, we receive the data, getting
 				# the name of the chatroom specified
 				received = conn.recv(self.buffer_size)
+				conn.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 				print received
 				received_split = received.split('\n')
 				action_key_value = received_split[0]
@@ -42,10 +43,11 @@ class WorkerPool:
 					client_name = client_name_key_value[client_name_key_value.find(':')+1:].strip() 
 					worker = Worker(addr[0], addr[1], conn, 1024, chat_room, client_name)
 					worker.start()
-					chat_room_join_identifier = worker.get_chat_room_join_identifier(chat_room.get_name())
+#					chat_room_join_identifier = worker.get_chat_room_join_identifier(chat_room.get_name())
 					self.thread_pool.append(worker)
-					conn.sendall("JOINED_CHATROOM: {0}\nSERVER_IP: {1}\nPORT: {2}\nROOM_REF: {3}\nJOIN_ID: {4}\n".format(chat_room_name, addr[0], addr[1], chat_room.get_identifier(), chat_room_join_identifier))
+#					conn.sendall("JOINED_CHATROOM: {0}\nSERVER_IP: {1}\nPORT: {2}\nROOM_REF: {3}\nJOIN_ID: {4}\n".format(chat_room_name, addr[0], addr[1], chat_room.get_identifier(), chat_room_join_identifier))
 				elif "helo" in received.strip().lower():
                                         conn.sendall("{0}\nIP:{1}\nPort:{2}\nStudentID:{3}\n".format(received.strip(), self.host, self.port, "12326755"))
-                        	elif "kill_service" in received.strip().lower():
+	                	elif "kill_service" in received.strip().lower():
+					print "killing server"
                                         conn.socket.close()
