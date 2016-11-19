@@ -51,7 +51,12 @@ class Worker(threading.Thread):
 			received_split = received.split('\n')
 			action_key_value = received_split[0]
 			action_name = action_key_value[:action_key_value.find(':')]
-			if (action_name == Worker.ACTION_LEAVE_CHATROOM):
+			if "helo" in received.strip().lower():
+		   			self.socket.sendall("{0}\nIP:{1}\nPort:{2}\nStudentID:{3}\n".format(received.strip(), self.host, self.port, 12326755))
+			elif "kill_service" in received.strip().lower():
+					self.socket.close()
+					self.exit = True
+			elif (action_name == Worker.ACTION_LEAVE_CHATROOM):
 				chat_room_identifier = int(action_key_value[action_key_value.find(':')+1:].strip())
 				chat_room = self.chat_rooms[chat_room_identifier]
 				self.deregister_with_chatroom(chat_room)
