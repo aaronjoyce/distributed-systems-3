@@ -57,7 +57,6 @@ class Worker(threading.Thread):
 					print "received hello"
 		   			self.socket.sendall("{0}\nIP:{1}\nPort:{2}\nStudentID:{3}\n".format(received.strip(), self.host, self.port, 12326755))
 			elif "kill_service" in received.strip().lower():
-					print "killing service"
 					self.socket.close()
 					self.exit = True
 			elif (action_name == Worker.ACTION_LEAVE_CHATROOM):
@@ -71,7 +70,8 @@ class Worker(threading.Thread):
 			elif (action_name == Worker.ACTION_CHAT):
 				chat_room_identifier = int(action_key_value[action_key_value.find(':')+1:].strip())
 				chat_room = self.chat_rooms[chat_room_identifier]
-				message_key_value = received_split[3]
+				message_key_value = received_split[2]
+				print received_split
 				message_content = message_key_value[message_key_value.find(':')+1:].strip()
 				print "message_content: " + str(message_content)
 				chat_room.relay(message_content, self)
