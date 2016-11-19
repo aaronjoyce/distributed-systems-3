@@ -22,9 +22,6 @@ class WorkerPool:
 		conn = None
 		while True:
 			print "waiting for connection"
-			if (conn != None):
-				received = conn.recv(self.buffer_size)
-                                print received
 			conn, addr = self.listener.accept()
 			if (len(self.thread_pool) < self.thread_pool_size):
 				# Then, accept the connection. 
