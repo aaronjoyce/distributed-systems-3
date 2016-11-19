@@ -24,7 +24,7 @@ class ChatRoom:
 		return worker_identifier
 
 	def deregister_observer(self, observer):
-		del self.observers[observer.get_chat_room_join_identifier()]
+		del self.observers[observer.get_chat_room_join_identifier(self.get_name())]
 
 	def get_name(self):
 		return self.name
@@ -39,14 +39,7 @@ class ChatRoom:
 		return self.identifier
 
 	def relay(self, message_content, relayer):
-		print "relaying message"
 		for key in self.observers:
 			# request that they relay the message to listening client
 			observer = self.observers[key]
-			message_prefix = ""
-			if observer == relayer:
-				message_prefix = "Me"
-			else:
-				message_prefix = relayer.client_name
-
-			observer.broadcast("{0}: {1}".format(message_prefix, message_content))
+			observer.broadcast("CHAT: {0}\nCLIENT_NAME: {1}\nMESSAGE: {2}\n".format(self.get_identifier(), relayer.get_client_name(), message_content))
