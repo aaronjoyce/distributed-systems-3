@@ -16,16 +16,18 @@ class Worker(threading.Thread):
 		self.socket = socket
 		self.exit = False
 		self.buffer_size = buffer_size
-		self.chat_room = chat_room
-		self.chat_room_join_identifier = None
-		self.register_with_chatroom()
+		self.chat_rooms = {}
+		self.chat_room_join_identifiers = {}
 		self.client_name = client_name
+		self.register_with_chatroom(chat_room)
 
-	def get_client_name():
+	def get_client_name(self):
 		return self.client_name
 
-	def register_with_chatroom(self):
-		self.chat_room_join_identifier = self.chat_room.register_observer(self)
+	def register_with_chatroom(self, chat_room):
+		self.chat_rooms[chat_room.get_identifier()] = chat_room
+		self.chat_room_join_identifiers[chat_room.get_name()] = chat_room.register_observer(self)
+		return self.chat_room_join_identifiers[chat_room.get_name()]
 
 	def broadcast(self, message):
 		self.socket.sendall(message)
@@ -33,11 +35,11 @@ class Worker(threading.Thread):
 	def get_chatroom(self):
 		return self.chat_room
 
-	def get_chat_room_join_identifier(self):
-		return self.chat_room_join_identifier
+	def get_chat_room_join_identifier(self, chat_room_name):
+		return self.chat_room_join_identifiers[chat_room_name]
 
-	def deregister_with_chatroom(self):
-		return self.chat_room.deregister_observer(self)
+	def deregister_with_chatroom(self, chat_room):
+		return chat_room.deregister_observer(self)
 
 	def disconnect(self):
 		self.socket.close()
@@ -46,22 +48,23 @@ class Worker(threading.Thread):
 	def run(self):
    		while not self.exit:
 		  	received = self.socket.recv(self.buffer_size)
-
 			received_split = received.split('\n')
 			action_key_value = received_split[0]
 			action_name = action_key_value[:action_key_value.find(':')]
-			print action_name
 			if (action_name == Worker.ACTION_LEAVE_CHATROOM):
-				chat_room_identifier = action_key_value[action_key_value.find(':')+1:].strip()
-				self.deregister_with_chatroom()
-				self.socket.sendall("LEFT_CHATROOM: {0}\nJOIN_ID: {1}\n".format(chat_room_identifier, self.chat_room_join_identifier))
+				chat_room_identifier = int(action_key_value[action_key_value.find(':')+1:].strip())
+				chat_room = self.chat_rooms[chat_room_identifier]
+				self.deregister_with_chatroom(chat_room)
+				self.socket.sendall("LEFT_CHATROOM: {0}\nJOIN_ID: {1}\n".format(chat_room_identifier, self.chat_room_join_identifiers[chat_room.get_name()]))
 			elif (action_name == Worker.ACTION_DISCONNECT):
 				self.disconnect()
 			elif (action_name == Worker.ACTION_CHAT):
-				print received
-				message_key_value = received_split[2]
+				chat_room_identifier = int(action_key_value[action_key_value.find(':')+1:].strip())
+				chat_room = self.chat_rooms[chat_room_identifier]
+				message_key_value = received_split[3]
 				message_content = message_key_value[message_key_value.find(':')+1:].strip()
-				self.chat_room.relay(message_content, self)
+				print "message_content: " + str(message_content)
+				chat_room.relay(message_content, self)
 			else:
 				break
 			"""
